@@ -1,8 +1,10 @@
 # Platform: Model ------------------------------------------------------------#
 from Platform import Platform
 
+
 import sqlite3
 
+from contants import PLATFORM_CREATE, PLATFORM_CREATE_TABLE, PLATFORM_DELETE, PLATFORM_READ, PLATFORM_UPDATE
 class PlatformModel:
     def __init__(self):
         self.platforms = []
@@ -12,41 +14,58 @@ class PlatformModel:
 
     def create_table(self):
         cursor = self.conn.cursor()
-        cursor.execute('''CREATE TABLE IF NOT EXISTS platforms (
-                            id INTEGER PRIMARY KEY,
-                            short_name TEXT NOT NULL,
-                            long_name TEXT NOT NULL,
-                            url TEXT NOT NULL)''')
+        cursor.execute(PLATFORM_CREATE_TABLE)
         self.conn.commit()
 
-    def create_platform(self, short_name, long_name, url):
+    def create_platform(self, platform: Platform):
+        """Insert a new platform"""
         cursor = self.conn.cursor()
-        cursor.execute(
-            'INSERT INTO platforms (short_name, long_name, url) VALUES (?, ?, ?)',
-            (short_name, long_name, url)
-        )
-        self.conn.commit()
+        try:
+            cursor.execute(
+                PLATFORM_CREATE,
+                (platform.name, platform.long_name, platform.url)
+            )
+            self.conn.commit()
+        finally:
+            cursor.close()
         self.read_platforms()
+
 
     def read_platforms(self):
+        """Select all platforms"""
         cursor = self.conn.cursor()
-        cursor.execute('SELECT id, short_name, long_name, url FROM platforms')
-        self.platforms = [Platform(*row) for row in cursor.fetchall()]
+        try:
+            cursor.execute(PLATFORM_READ)
+            self.platforms = [Platform(*row) for row in cursor.fetchall()]
+        finally:
+            cursor.close()
+
 
     def update_platform(self, new_platform: Platform, old_platform: Platform):
+        """Update an existing platform"""
         cursor = self.conn.cursor()
-        cursor.execute(
-            'UPDATE platforms SET short_name = ?, long_name = ?, url = ? WHERE id = ?',
-            (new_platform.name, new_platform.long_name, new_platform.url, old_platform.id)
-        )
-        self.conn.commit()
+        try:
+            cursor.execute(
+                PLATFORM_UPDATE,
+                (new_platform.name, new_platform.long_name, new_platform.url, old_platform.id)
+            )
+            self.conn.commit()
+        finally:
+            cursor.close()
         self.read_platforms()
 
-    def delete_platform(self, short_name):
+
+    def delete_platform(self, platform: Platform):
+        """Delete a platform by short_name"""
         cursor = self.conn.cursor()
-        cursor.execute('DELETE FROM platforms WHERE short_name = ?', (short_name,))
-        self.conn.commit()
+        try:
+            cursor.execute(PLATFORM_DELETE, (platform.id))
+            self.conn.commit()
+        finally:
+            cursor.close()
         self.read_platforms()
+
 
     def get_platforms(self):
+        """Return a list of platforms"""
         return self.platforms
